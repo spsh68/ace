@@ -293,7 +293,8 @@ exports.launch = function(env) {
     });
 
     event.addListener(container, "drop", function(e) {
-        try {
+        return
+		try {
             var file = e.dataTransfer.files[0];
         } catch(e) {
             return event.stopEvent();
