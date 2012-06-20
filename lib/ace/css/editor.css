@@ -326,3 +326,16 @@
             transition: opacity 0.05s ease 0.05s;
     opacity:1;
 }
+
+/* todo use background instead?*/
+.ace_line .ace_indent-guide {
+    border-right: dotted 1px lightgray;
+    display: inline-block;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
+
+.ace_dark .ace_line .ace_indent-guide {
+    border-right-color: lightgray;
+}
+
