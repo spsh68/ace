@@ -39,7 +39,6 @@
 
 
 define(function(require, exports, module) {
-"use strict";
 
 require("ace/lib/fixoldbrowsers");
 require("ace/config").init();
@@ -168,7 +167,6 @@ function makeHuge(txt) {
 }
 
 var docs = {
-    "docs/c9search.c9search_results": "C9 Search Results",
     "docs/javascript.js": "JavaScript",
     "docs/plaintext.txt": {name: "Plain Text", prepare: makeHuge, wrapped: true},
     "docs/coffeescript.coffee": "Coffeescript",
@@ -207,7 +205,8 @@ var docs = {
     "docs/sql.sql": {name: "SQL", wrapped: true},
     "docs/pgsql.pgsql": {name: "pgSQL", wrapped: true},
     "docs/golang.go": "Go",
-    "docs/jsx.jsx": "JSX"
+    "docs/jsx.jsx": "JSX",
+    "docs/c9search.c9search_results": "C9 Search Results"
 }
 
 var ownSource = {
@@ -284,7 +283,7 @@ env.editor.commands.addCommands([{
     name: "gotoline",
     bindKey: {win: "Ctrl-L", mac: "Command-L"},
     exec: function(editor, line) {
-        if (typeof needle == "object") {
+        if (typeof line == "object") {
             var arg = this.name + " " + editor.getCursorPosition().row;
             editor.cmdLine.setValue(arg, 1)
             editor.cmdLine.focus()
@@ -326,7 +325,7 @@ cmdLine.commands.bindKeys({
     },
 })
 
-cmdLine.commands.removeCommands(["find", "goToLine", "findAll", "replace", "replaceAll"])
+cmdLine.commands.removeCommands(["find", "gotoline", "findall", "replace", "replaceall"])
 
 /**
  * This demonstrates how you can define commands and bind shortcuts to them.
@@ -555,6 +554,10 @@ bindCheckbox("show_hidden", function(checked) {
     env.editor.setShowInvisibles(checked);
 });
 
+bindCheckbox("display_indent_guides", function(checked) {
+    env.editor.setDisplayIndentGuides(checked);
+});
+
 bindCheckbox("show_gutter", function(checked) {
     env.editor.renderer.setShowGutter(checked);
 });
@@ -681,9 +684,13 @@ require("ace/multi_select").MultiSelect(env.editor);
 
 
 
+
 function singleLineEditor(el) {
     var renderer = new Renderer(el);
+    el.style.overflow = "hidden";
+    renderer.scrollBar.element.style.top = "0";
     renderer.scrollBar.element.style.display = "none";
+    renderer.scrollBar.orginalWidth = renderer.scrollBar.width;
     renderer.scrollBar.width = 0;
     renderer.content.style.height = "auto";
 
@@ -694,15 +701,45 @@ function singleLineEditor(el) {
             Math.max(pos.column, 0)
         );
     };
-    // todo size change event
+    
+    renderer.maxLines = 4;
+    renderer.$computeLayerConfigWithScroll = renderer.$computeLayerConfig;
     renderer.$computeLayerConfig = function() {
+        var config = this.layerConfig;
+        var height = this.session.getScreenLength() * this.lineHeight;
+        if (config.height != height) {
+            var vScroll = height > this.maxLines * this.lineHeight;
+            
+            if (vScroll != this.$vScroll) {
+                if (vScroll) {
+                    this.scrollBar.element.style.display = "";
+                    this.scrollBar.width = this.scrollBar.orginalWidth; 
+                    this.container.style.height = config.height + "px";
+                    height = config.height;
+                    this.scrollTop = height - this.maxLines * this.lineHeight;
+                } else {
+                    this.scrollBar.element.style.display = "none";
+                    this.scrollBar.width = 0;
+                }
+                
+                this.onResize();
+                this.$vScroll = vScroll;
+            }                
+            
+            if (this.$vScroll)
+                return renderer.$computeLayerConfigWithScroll();
+            
+            this.container.style.height = height + "px";
+            this.scroller.style.height = height + "px";
+            this.content.style.height = height + "px";
+            this._emit("resize");
+        }
+        
         var longestLine = this.$getLongestLine();
         var firstRow = 0;
         var lastRow = this.session.getLength();
-        var height = this.session.getScreenLength() * this.lineHeight;
 
         this.scrollTop = 0;
-        var config = this.layerConfig;
         config.width = longestLine;
         config.padding = this.$padding;
         config.firstRow = 0;
@@ -718,12 +755,10 @@ function singleLineEditor(el) {
         this.$gutterLayer.element.style.marginTop = 0 + "px";
         this.content.style.marginTop = 0 + "px";
         this.content.style.width = longestLine + 2 * this.$padding + "px";
-        this.content.style.height = height + "px";
-        this.scroller.style.height = height + "px";
-        this.container.style.height = height + "px";
     };
     renderer.isScrollableBy=function(){return false};
 
+    renderer.setStyle("ace_one-line");
     var editor = new Editor(renderer);
     new MultiSelect(editor);
     editor.session.setUndoManager(new UndoManager());
@@ -732,9 +767,105 @@ function singleLineEditor(el) {
     editor.setShowPrintMargin(false);
     editor.renderer.setShowGutter(false);
     // editor.renderer.setHighlightGutterLine(false);
+    
+    editor.$mouseHandler.$focusWaitTimout = 0;
+    
     return editor;
-};
+}
 
+
+
+el = dom.createElement("div")
+
+popup = singleLineEditor(el)
+
+
+
+
+
+document.body.appendChild(el)
+
+
+el.style.width="200px"
+el.style.top="200px"
+el.style.left="200px"
+el.style.zIndex="20000"
+el.style.background="white"
+el.style.border="lightgray solid"
+
+popup.resize()
+popup.renderer.maxLines=6
+popup.renderer.$keepTextAreaAtCursor=false
+
+popup.setHighlightActiveLine(true)
+popup.setSession(new EditSession(""))
+popup.session.setValue("hello\nsd\nhuio")
+
+
+
+
+
+
+editor=ace
+popup.position="fixed"
+editor.commands.addCommand({
+    name: "startAutocomplete",
+    exec: function(editor) {
+        var pos = editor.renderer.$cursorLayer.getPixelPosition()
+        var r = editor.container.getBoundingClientRect()
+        pos.top += r.top
+        pos.left += r.left
+        pos.top += editor.renderer.layerConfig.lineHeight
+        pos.left += editor.renderer.$gutterLayer.gutterWidth
+        var el = popup.container
+        el.style.top = pos.top + "px"
+        el.style.left = pos.left + "px"
+        el.style.display = ""
+        
+        editor.keyBinding.addKeyboardHandler(autocompleter.keyboardHandler)
+        editor.on("changeSelection", autocompleter.changeListener)
+    },
+    bindKey: "Ctrl-Space|Shift-Space|Alt-Space"
+})
+
+        el.style.display = "none"
+
+autocompleter = {}
+autocompleter.$changeListener = function(e) {
+    
+}
+autocompleter.changeListener = autocompleter.$changeListener.bind(autocompleter);
+autocompleter.keyboardHandler = new HashHandler()
+autocompleter.keyboardHandler.bindKeys({
+    "up": function(ed) {
+        editor.gotoLine(-1)
+    },
+    "down": function(ed) {
+    
+    },
+    "ctrl-up": function(ed) {
+    
+    },
+    "ctrl-down": function(ed) {
+    
+    },
+    "esc": function(editor) {
+        editor.keyBinding.removeKeyboardHandler(autocompleter.keyboardHandler);
+        editor.removeEventListener(autocompleter.changeListener);
+    },
+    "Return": function(ed) {
+    
+    },
+    "Shift-Return": function(ed) {
+    
+    },
+    "Tab": function(ed) {
+    
+    },
+    "Shift-Tab": function(ed) {
+    
+    },
+})
 
 });
 

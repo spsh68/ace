@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Ace Theme Converter</title>
+    <meta name="author" content="Harutyun Amirjanyan">
+	<style type="text/css" >
+		body, html {
+			overflow: hidden;
+			height: 100%;
+			width: 100%;
+			margin: 0;
+			padding: 0;
+		}
+				
+		.ace_content .ace_text-layer * {
+			 pointer-events: auto!important;
+		}
+		
+		.cPSkin{
+			z-index:100
+		}
+		#header {
+			border-bottom: solid 1px;
+		}
+	</style>
+
+	<script type="text/javascript" src="browser_tool/colorPicker/colorPicker.js"></script>
+</head>
+<body>
+
+<div id="header">
+	<button onclick='editor2.setSession(themeDoc);docEl.selectedIndex=0;updateThemeDoc()'>show converted theme</button>
+	<span>&nbsp;&nbsp;&nbsp;</span>
+	<label for="name">name</label>   
+	<input id="name"  value="coolNewTheme" oninput='schedule()'></input>   
+	
+	<label for="themeEl">tmTheme</label>      
+	<select id="themeEl" size="1">
+	</select>
+	
+	<input type="text" onClick="colorPicker(event)"></input>
+	<div style='float:right'>
+		<label for="doc">Document</label>      
+        <select id="doc" size="1">
+        </select>
+	</div>
+</div>
+<div id="editor"></div>
+
+
+<script type="text/javascript">
+  var require = {
+	  baseUrl: "/" + window.location.pathname.split("/").slice(0, -1).join("/"),
+	  paths: {
+		  ace: "lib/ace"
+	  }
+  };
+</script>
+<script src="browser_tool/tmtheme.js" type="text/javascript" charset="utf-8"></script>
+<script src="demo/kitchen-sink/require.js" data-main="browser_tool/theme" type="text/javascript"></script>
+
+
+<style type="text/css" id='ace-new-theme'></style>
+</body>
+</html>

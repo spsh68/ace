@@ -47,23 +47,17 @@ var BUILD_DIR = "build";
 
 function main(args) {
     var type = "minimal";
-    args = args.map(function(x) {
-        if (x[0] == "-" && x[1] != "-")
-            return "-" + x;
-        return x;
-    });
-    
-    if (args[2] && (args[2][0] != "-" || args[2].indexOf("h") != -1))
+    if (args[2] && (args[2][0] != "-" || args[2].indexOf("h") == -1))
         type = args[2];
 
-    var i = args.indexOf("--target");
+    var i = args.indexOf("--target")
     if (i != -1 && args[i+1])
         BUILD_DIR = args[i+1];
 
     if (type == "minimal") {
         buildAce({
-            compress: args.indexOf("--m") != -1,
-            noconflict: args.indexOf("--nc") != -1
+            compress: args.indexOf("-m") != -1,
+            noconflict: args.indexOf("-nc") != -1
         });
     } else if (type == "normal") {
         ace();
@@ -88,10 +82,6 @@ function main(args) {
     console.log("  -m                minify");
     console.log("  -nc               namespace require");
     console.log("  --target ./path   path to build folder");
-    console.log("");
-    if (BUILD_DIR)
-        console.log(" output generated in " + type + __dirname + "/" + BUILD_DIR)
-    
     process.exit(0);
     
 }
@@ -176,10 +166,14 @@ function demo() {
     }
     var changeComments = function(data) {
             return (data
-                .replace(/<!\-\-DEVEL[\d\D]*?DEVEL\-\->/g, "")
-                .replace(/PACKAGE\-\->|<!\-\-PACKAGE/g, "")
-                .replace(/\/\*DEVEL[\d\D]*?DEVEL\*\//g, "")
-                .replace(/PACKAGE\*\/|\/\*PACKAGE/g, "")
+                .replace("DEVEL-->", "")
+                .replace("<!--DEVEL", "")
+                .replace("PACKAGE-->", "")
+                .replace("<!--PACKAGE", "")
+                .replace("DEVEL*/", "")
+                .replace("/*DEVEL", "")
+                .replace("PACKAGE*/", "")
+                .replace("/*PACKAGE", "")
                 .replace("%version%", version)
                 .replace("%commit%", ref)
             );
@@ -345,14 +339,14 @@ function buildAce(options) {
         });*/
         // use this instead, to not create separate modules for js and css
         var themePath = "lib/ace/theme/" + theme
-        var js = fs.readFileSync(themePath + ".js", "utf8");
-        js = js.replace("define(", "define('ace/theme/" + theme + "', ['require', 'exports', 'module', 'ace/lib/dom'], ");
+        var js = fs.readFileSync(themePath + ".js", "utf8")
+        js = js.replace("define(", "define('ace/theme/" + theme + "',")
         
         if (fs.existsSync(themePath + ".css", "utf8")) {
             var css = fs.readFileSync(themePath + ".css", "utf8")
             js = js.replace(/require\(.ace\/requirejs\/text!.*?\)/, quoteString(css))
         }
-        filters.forEach(function(f) {js = f(js); });
+        filters.forEach(function(f) {js = f(js); })
         
         fs.writeFileSync(targetDir + "/theme-" + theme + ".js", js); 
     });

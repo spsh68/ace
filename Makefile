@@ -19,7 +19,8 @@ doc:
 	cd doc; node build.js
 
 clean:
-	rm -rf build
+	rm -rf build/src*
+	rm -rf build/ace-*
 	rm -rf ace-*
 	rm -f ace-*.tgz
 

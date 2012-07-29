@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Ace Mode Creator</title>
+    <meta name="author" content="Harutyun Amirjanyan">
+	<style type="text/css" >
+		body, html {
+			overflow: hidden;
+			height: 100%;
+			width: 100%;
+			margin: 0;
+			padding: 0;
+		}
+		
+		.ace_content .ace_text-layer * {
+			pointer-events: auto!important;
+		}
+		
+		.cPSkin{
+			z-index:100
+		}
+		#header {
+			border-bottom: solid 1px;
+		}
+	</style>
+
+</head>
+<body>
+
+<div id="header">
+	<label for="themeEl">mode</label>
+	<select id="modeEl" size="1">
+	</select>
+	<span id="tablist"></span>
+	
+	
+
+	
+	<div style='float:right'>
+		<label for="doc">Document</label>      
+        <select id="doc" size="1">
+        </select>
+	</div>
+</div>
+<div id="editor"></div>
+
+
+<script type="text/javascript">
+  var require = {
+	  baseUrl: "/" + window.location.pathname.split("/").slice(0, -1).join("/"),
+	  paths: {
+		  ace: "lib/ace"
+	  }
+  };
+</script>
+<script src="demo/kitchen-sink/require.js" data-main="browser_tool/mode" type="text/javascript"></script>
+<script type="text/javascript">
+	// make modules reloadable
+	var context = require.s.contexts._
+	var define_orig = define
+	define = function(name, deps, module){
+		if (typeof name != "string")
+			return define_orig(name, deps, module)
+		if (!module) {
+			module = deps
+			deps = ["require", "exports", "module"]
+		}
+		if (context.defined[name]){
+			name = context.normalize(name)
+			var req = function(n, c){
+				return require(context.normalize(n, name), c)
+			}
+			var exp = {}
+			mod = {id: name, exports: exp}	
+			var ret = module(req, exp, mod)
+			context.defined[name] = ret || exp
+			return 
+		}
+
+		
+		define_orig(name, deps, module)
+		
+		context.completeLoad(name)
+	}
+
+</script>
+
+
+</body>
+</html>

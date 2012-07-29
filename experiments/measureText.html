@@ -1,0 +1,69 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN"
+   "http://www.w3.org/TR/html4/strict.dtd">
+
+<html lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<title>worker</title>
+	<meta name="generator" content="TextMate http://macromates.com/">
+	<meta name="author" content="Fabian Jakobs">
+	<!-- Date: 2010-04-08 -->
+</head>
+<body>
+<canvas id="c"></canvas>
+<pre id="s"><span></span><pre>
+
+<script type="text/javascript" charset="utf-8">
+var canvas = document.getElementById("c")
+var ctx = canvas.getContext("2d")
+
+var pre = document.getElementById("s")
+var span = pre.firstChild
+
+pre.style.position="fixed"
+pre.style.top="000px"
+canvas.style.position="fixed"
+canvas.style.top="000px"
+
+
+span.style.font = ctx.font ="38px arial"
+
+
+function measureWithDom(text){
+	span.innerHTML = text
+	return span.offsetWidth
+}
+
+function measureWithCanvas(text){
+	return ctx.measureText(text).width
+}
+
+function test()
+
+timerStart=Date.now()
+for(var timerI=0;timerI<100;timerI++){
+c.font =timerI+"px arial"
+}
+timerStart-Date.now()
+//#>>
+d.style.position="fixed"
+d.style.top="-1000"
+d.style.opacity=0
+timerStart=Date.now()
+for(var timerI=0;timerI<100;timerI++){
+d.innerHTML="some text" + timerI
+d.offsetWidth
+d.style.font =timerI+"px arial"
+}
+timerStart-Date.now()
+
+//#>>
+
+
+
+
+  
+</script>
+
+</body>
+</html>

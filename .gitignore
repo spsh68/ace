@@ -21,3 +21,6 @@ tool/node_modules/
 .git-ref
 npm-debug.log
 deps/
+
+build/
+/build
