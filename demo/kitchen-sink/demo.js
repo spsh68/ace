@@ -83,10 +83,16 @@ require("ace/multi_select").MultiSelect(env.editor);
 
 var consoleEl = dom.createElement("div");
 container.parentNode.appendChild(consoleEl);
-consoleEl.style.cssText = "position:fixed; bottom:1px; right:0;\
-border:1px solid #baf; zIndex:100";
+consoleEl.style.cssText = "\
+    background-color: #F8F8F8;\
+    border-top: 1px solid #BCBCBC;\
+    bottom: 0; right: 0;\
+    overflow: hidden;\
+    position: fixed;\
+    z-index: 100;";
 
 var cmdLine = new layout.singleLineEditor(consoleEl);
+cmdLine.renderer.scroller.style.background = "inherit"
 cmdLine.editor = env.editor;
 env.editor.cmdLine = cmdLine;
 
@@ -142,16 +148,149 @@ env.editor.commands.addCommands([{
 
 cmdLine.commands.bindKeys({
     "Shift-Return|Ctrl-Return|Alt-Return": function(cmdLine) { cmdLine.insert("\n"); },
-    "Esc|Shift-Esc": function(cmdLine){ cmdLine.editor.focus(); },
-    "Return": function(cmdLine){
+    "Esc|Shift-Esc": function finish(cmdLine){
+        cmdLine.addToHistory();
+        cmdLine.setValue("");
+        cmdLine.editor.focus(); 
+    },
+    "Return": function run(cmdLine){        
         var command = cmdLine.getValue().split(/\s+/);
         var editor = cmdLine.editor;
         editor.commands.exec(command[0], editor, command[1]);
-        editor.focus();
+        cmdLine.execCommand("finish");
+    },
+    "Tab": function tabNext() {
+    
+    },
+    "Shift-Tab": function tabPrevious() {
+    
+    },
+    "Up": function(cmdLine) {cmdLine.navigateHistory(-1)},
+    "Down": function(cmdLine) {cmdLine.navigateHistory(1)},
+    "Ctrl-Home|PageUp": function(cmdLine) {cmdLine.navigateHistory(0)},
+    "Ctrl-End|PageDown": function(cmdLine) {cmdLine.navigateHistory()}
+});
+
+cmdLine.history = [];
+cmdLine.navigateHistory = function(dir) {
+    var cliCmd = this.getCurrentCommand() || {};
+    var history = cliCmd.history || this.history;
+    var index = history.index;
+    var value = this.getValue();
+    var cmd = history[index] || "";
+    
+    if (dir == 0) {
+        index = 0;
+    } else if (dir == null) {
+        index = history.length;
+    } else if (typeof dir == "number") {        
+        index += dir;
+        if (index < 0)
+            index = 0;
+        if (index > history.length)
+            index = history.length;
+    }
+    
+    cmd = history[index] || history.defaultCommand || "";
+    // TODO keep history.lastTyped    
+    this.setValue(cmd, 1);
+    history.index = index;
+};
+
+cmdLine.addToHistory = function(val) {
+    val = val || this.getValue();
+    var history = this.history;
+    if (val && val != history[history.index]) {
+        history.index = history.length;
+        history.push(val);
+    }
+};
+
+cmdLine.getCurrentCommand = function() {
+    return {};
+}
+
+cmdLine.on("blur", function() {
+    cmdLine.renderer.$cursorLayer.element.style.opacity = 0;
+    if (!cmdLine.getValue()) {
+        cmdLine.renderer.content.style.visibility = "hidden";
+        cmdLine.$messageNode.style.display = ""
+        cmdLine.$inMessageMode = true;
+        cmdLine.$messageNode.textContent = cmdLine.$message || "";
     }
 });
 
+cmdLine.on("focus", function() {
+    cmdLine.renderer.$cursorLayer.element.style.opacity = "";
+    cmdLine.renderer.content.style.visibility = "";
+    cmdLine.$messageNode.style.display = "none"
+    cmdLine.$inMessageMode = false
+});
+
+cmdLine.commands.on("exec", function(e) {
+    if (e.command && e.command.name == "insertstring") {
+        
+    }
+});
+
+cmdLine.$messageNode = dom.createElement("div");
+cmdLine.$messageNode.style.cssText = "position:absolute;color:darkslateblue;padding:0 5px";
+cmdLine.container.appendChild(cmdLine.$messageNode);
+
+cmdLine.cliCommands = [
+    {
+        name: "ascii",
+        description: "",
+        exec: function(editor) {            
+            var onSelectionChange = lang.delayedCall(function(e) {
+                var c = editor.getCursorPosition()
+                var ch = editor.session.getLine(c.row)[c.column - 1] || "\n";
+                var code = ch.charCodeAt(0);
+                var msg = ch + "=" + " ";
+                var str = code.toString(16);
+                str = [,"\\x0","\\x", "\\u0", "\\u"][str.length] + str;
+                msg += str + " ";
+                msg += "\\" + code.toString(8) + " ";
+                msg += "&#" + code + ";";                
+                editor.cmdLine.setMessage(msg);
+                clear.delay(2000);
+            });
+            
+            var clear = lang.delayedCall(function(e) {
+                editor.removeListener(editor.asciiMessageListener);
+                editor.asciiMessageListener = null;
+                editor.cmdLine.setMessage("");
+            });
+            
+            if (editor.asciiMessageListener) {
+                return clear.call();
+            }
+            editor.on("changeSelection", editor.asciiMessageListener = function() {
+                onSelectionChange.schedule(200);
+            });
+            onSelectionChange.call();
+        },
+        
+    },
+]
+
+cmdLine.setMessage = function(text, from) {
+    this.$message = text;
+    if (from) {
+    
+    }
+    if (this.$inMessageMode)
+        this.$messageNode.textContent = text;
+}
+
+if (!cmdLine.isFocused())
+    cmdLine._emit("blur")
+        
 cmdLine.commands.removeCommands(["find", "gotoline", "findall", "replace", "replaceall"]);
+
+
+
+
 
 var commands = env.editor.commands;
 commands.addCommand({
@@ -179,6 +318,7 @@ var keybindings = {
 /*********** manage layout ***************************/
 var consoleHeight = 20;
 function onResize() {
+    consoleHeight = cmdLine.renderer.layerConfig.lineHeight + 1;
     var left = env.split.$container.offsetLeft;
     var width = document.documentElement.clientWidth - left;
     container.style.width = width + "px";

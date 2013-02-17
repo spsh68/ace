@@ -7,9 +7,11 @@ $(function() {
     editor.container.style.opacity = "";
     embedded_editor = ace.edit("embedded_ace_code");
     embedded_editor.container.style.opacity = "";
-    editor.getSession().setMode("ace/mode/javascript");
-    editor.getSession().setMode("ace/mode/javascript");
-    embedded_editor.getSession().setMode("ace/mode/html");
+    editor.session.setMode("ace/mode/javascript");
+    editor.session.setMode("ace/mode/javascript");
+    embedded_editor.session.setMode("ace/mode/html");
+    
+    editor.setTheme("ace/theme/xcode")
     
     $("ul.menu-list li").click(function(e) {
         if (e.target.tagName === "LI") {
